@@ -1,38 +1,34 @@
 import streamlit as st
 import requests
 
-st.title("PulseMarket: Integrity Scanner")
+st.title("PulseMarket: Full Meme Data")
 
-def analyze_token(token_data):
-    score = 0
-    liquidity = token_data.get('liquidity', {}).get('usd', 0)
-    if liquidity > 10000:
-        score += 50
-    socials = token_data.get('info', {}).get('socials', [])
-    twitter = any(s['type'] == 'twitter' for s in socials)
-    if twitter:
-        score += 30
-    return score
-
-def get_solana_pairs():
-    url = "https://api.dexscreener.com/latest/dex/search?q=solana"
+def get_full_meme_data():
+    url = "https://api.dexscreener.com/latest/dex/tokens/solana"
+    headers = {"User-Agent": "Mozilla/5.0"}
     try:
-        response = requests.get(url, timeout=10)
+        response = requests.get(url, headers=headers, timeout=10)
         if response.status_code == 200:
             return response.json().get('pairs', [])
         return []
     except:
         return []
 
-if st.button("Scan Integrity"):
-    tokens = get_solana_pairs()
-    found = False
-    for t in tokens:
-        score = analyze_token(t)
-        if score >= 80:
-            st.write(f"**Alpha Detected**: {t['baseToken']['symbol']} | **Score**: {score}")
-            st.write(f"**Price**: ${t['priceUsd']}")
-            st.write("---")
-            found = True
-    if not found:
-        st.write("No high-integrity tokens found.")
+if st.button("Get Full Token Data"):
+    tokens = get_full_meme_data()
+    if tokens:
+        for t in tokens[:5]:
+            info = t.get('info', {})
+            socials = info.get('socials', [])
+            twitter = next((s['url'] for s in socials if s['type'] == 'twitter'), "No Twitter")
+            
+            # Cikakken bayanin coin
+            st.write(f"### {t.get('baseToken', {}).get('symbol')}")
+            st.write(f"**Price:** ${t.get('priceUsd')}")
+            st.write(f"**Liquidity:** ${t.get('liquidity', {}).get('usd', 0):,.2f}")
+            st.write(f"**24h Vol:** ${t.get('volume', {}).get('h24', 0):,.2f}")
+            st.write(f"**Twitter:** {twitter}")
+            st.write(f"**DEX ID:** {t.get('dexId')}")
+            st.markdown("---")
+    else:
+        st.error("Cannot fetch full data.")

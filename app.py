@@ -4,24 +4,25 @@ import requests
 st.title("PulseMarket AI Scanner")
 
 def get_real_solana_data():
-    # Amfani da API na DexScreener don kamo bayanan gaske
+    # URL ɗin da ya fi dacewa don kamo bayanai
     url = "https://api.dexscreener.com/latest/dex/tokens/solana"
     try:
-        response = requests.get(url, timeout=5)
+        response = requests.get(url, timeout=10)
         if response.status_code == 200:
             data = response.json()
-            # Muna tace bayanan su zama gajeru
             return data.get('pairs', [])[:5]
         return None
-    except:
+    except Exception as e:
         return None
 
 if st.button("Scan Market"):
-    with st.spinner('Fetching real Solana data...'):
+    with st.spinner('Scanning...'):
         tokens = get_real_solana_data()
-        if tokens:
+        if tokens and len(tokens) > 0:
             st.success("Analysis Complete!")
             for token in tokens:
-                st.write(f"**Token**: {token['baseToken']['symbol']} | **Price**: ${token['priceUsd']}")
+                symbol = token.get('baseToken', {}).get('symbol', 'N/A')
+                price = token.get('priceUsd', 'N/A')
+                st.write(f"**{symbol}**: ${price}")
         else:
-            st.error("Failed to fetch real data.")
+            st.warning("No data found or connection issue. Please try again.")

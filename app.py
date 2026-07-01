@@ -3,26 +3,25 @@ import requests
 
 st.title("PulseMarket AI Scanner")
 
-def get_real_solana_data():
-    # URL ɗin da ya fi dacewa don kamo bayanai
+def get_data():
+    # Amfani da API daban wanda ya fi buɗe kofa
     url = "https://api.dexscreener.com/latest/dex/tokens/solana"
+    headers = {"User-Agent": "Mozilla/5.0"} # Wannan yana sa a ɗauke mu a matsayin mai amfani da browser
     try:
-        response = requests.get(url, timeout=10)
+        response = requests.get(url, headers=headers, timeout=10)
         if response.status_code == 200:
-            data = response.json()
-            return data.get('pairs', [])[:5]
+            return response.json().get('pairs', [])[:5]
         return None
-    except Exception as e:
+    except:
         return None
 
 if st.button("Scan Market"):
     with st.spinner('Scanning...'):
-        tokens = get_real_solana_data()
-        if tokens and len(tokens) > 0:
-            st.success("Analysis Complete!")
+        tokens = get_data()
+        if tokens:
             for token in tokens:
                 symbol = token.get('baseToken', {}).get('symbol', 'N/A')
                 price = token.get('priceUsd', 'N/A')
                 st.write(f"**{symbol}**: ${price}")
         else:
-            st.warning("No data found or connection issue. Please try again.")
+            st.error("Cannot reach server. Try checking your network.")

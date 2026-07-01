@@ -1,25 +1,38 @@
 import streamlit as st
 import requests
 
-st.title("PulseMarket AI Scanner")
+st.title("PulseMarket: Integrity Scanner")
 
-@st.cache_data(ttl=30)
-def get_data():
+def analyze_token(token_data):
+    score = 0
+    liquidity = token_data.get('liquidity', {}).get('usd', 0)
+    if liquidity > 10000:
+        score += 50
+    socials = token_data.get('info', {}).get('socials', [])
+    twitter = any(s['type'] == 'twitter' for s in socials)
+    if twitter:
+        score += 30
+    return score
+
+def get_solana_pairs():
     url = "https://api.dexscreener.com/latest/dex/search?q=solana"
-    headers = {"User-Agent": "Mozilla/5.0"}
     try:
-        response = requests.get(url, headers=headers, timeout=5)
+        response = requests.get(url, timeout=10)
         if response.status_code == 200:
-            return response.json().get('pairs', [])[:5]
+            return response.json().get('pairs', [])
+        return []
     except:
-        return None
-    return None
+        return []
 
-if st.button("Scan Market"):
-    with st.spinner('Scanning...'):
-        tokens = get_data()
-        if tokens:
-            for token in tokens:
-                st.write(f"**{token.get('baseToken', {}).get('symbol')}**: ${token.get('priceUsd')}")
-        else:
-            st.error("Connection failed. Try refreshing the page.")
+if st.button("Scan Integrity"):
+    tokens = get_solana_pairs()
+    found = False
+    for t in tokens:
+        score = analyze_token(t)
+        if score >= 80:
+            st.write(f"**Alpha Detected**: {t['baseToken']['symbol']} | **Score**: {score}")
+            st.write(f"**Price**: ${t['priceUsd']}")
+            st.write("---")
+            found = True
+    if not found:
+        st.write("No high-integrity tokens found.")
